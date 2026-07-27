@@ -1,0 +1,53 @@
+name: Release
+on:
+  push:
+    branches: [main]
+
+# One release at a time: two quick merges to main must not run semantic-release
+# concurrently (version-bump/publish race). Queued, never cancelled.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  # Required for npm OIDC trusted publishing — npm exchanges this short-lived
+  # token for publish rights, so there is no NPM_TOKEN secret in this repo.
+  id-token: write
+  contents: read
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          # main is ruleset-protected: semantic-release pushes the changelog and
+          # version bump, so it needs a deploy key that can bypass the ruleset.
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Verify provenance attestations and registry signatures
+        run: npm audit signatures
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

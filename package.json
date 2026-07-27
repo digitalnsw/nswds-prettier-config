@@ -1,0 +1,56 @@
+{
+  "name": "@nswds/prettier-config",
+  "version": "0.0.0",
+  "description": "Shared Prettier configuration for the NSW Design System fleet.",
+  "license": "ISC",
+  "keywords": [
+    "prettier",
+    "prettier-config",
+    "formatting",
+    "code-style",
+    "nswds",
+    "nsw-government"
+  ],
+  "homepage": "https://github.com/digitalnsw/nswds-prettier-config#readme",
+  "bugs": {
+    "url": "https://github.com/digitalnsw/nswds-prettier-config/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/digitalnsw/nswds-prettier-config.git"
+  },
+  "author": "NSW Design System",
+  "type": "module",
+  "main": "index.json",
+  "exports": {
+    ".": "./index.json"
+  },
+  "files": [
+    "index.json"
+  ],
+  "engines": {
+    "node": "^22.14.0 || >=24.10.0"
+  },
+  "scripts": {
+    "semantic-release": "semantic-release",
+    "test": "node --test"
+  },
+  "peerDependencies": {
+    "prettier": ">=3"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.3",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "prettier": "^3.5.3",
+    "semantic-release": "^25.0.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
