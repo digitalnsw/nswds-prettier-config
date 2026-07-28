@@ -51,3 +51,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
+
+      # Catches the partial release: tag pushed and CHANGELOG committed, but the npm
+      # publish never landed. Runs even when this push released nothing, so a gap left
+      # by an earlier run turns THIS run red rather than hiding behind "no relevant
+      # changes". (It is skipped if semantic-release itself fails — that already fails
+      # the job, so there is nothing left to surface.)
+      - name: Verify npm matches the latest release tag
+        run: node scripts/verify-release-published.mjs
