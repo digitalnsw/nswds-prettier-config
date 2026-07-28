@@ -50,6 +50,15 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # LOAD-BEARING: @semantic-release/git commits the changelog and version
+          # bump during the release, and husky's commit-msg hook would lint that
+          # bot commit — long release-note footers fail footer-max-line-length.
+          # commitlint.config.mjs also ignores `chore(release):`, so this is the
+          # second of two layers: losing either one alone cannot break a release.
+          # Dropping it is how nswds-tokens releases broke twice (tokens #72/#94).
+          # Scoped to THIS STEP deliberately — job-wide, husky's "HUSKY=0 skip
+          # install" line pollutes stdout of any step that parses command output.
+          HUSKY: 0
         run: npx semantic-release
 
       # Catches the partial release: tag pushed and CHANGELOG committed, but the npm
