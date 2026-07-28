@@ -9,10 +9,11 @@ truth for the formatting options that were previously copy-pasted into a
 Install it, then reference it by name from `package.json` (delete the repo's
 old `.prettierrc`):
 
-```jsonc
-// package.json
+In `package.json`:
+
+```json
 {
-  "prettier": "@nswds/prettier-config",
+  "prettier": "@nswds/prettier-config"
 }
 ```
 
