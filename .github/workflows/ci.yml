@@ -16,6 +16,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Runs before install: npm reports a lockfile containing conflict markers
+      # as a parse error that reads like a corrupt lockfile, so catch the markers
+      # in any tracked file first and say plainly what's wrong. The pull_request
+      # event checks out the PR merged into its base, so this covers markers
+      # introduced by the merge itself — including via GitHub's web "Resolve
+      # conflicts" editor, which no local hook can see.
+      - name: Check for unresolved merge conflict markers
+        run: |
+          if git grep -nE '^(<{7}|>{7}) '; then
+            echo "::error::Unresolved merge conflict markers found in the files above."
+            exit 1
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
