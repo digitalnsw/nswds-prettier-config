@@ -51,3 +51,20 @@ this repo.
 `index.test.mjs` resolves every option through Prettier's own support info on
 each CI run. Prettier silently ignores keys it does not recognise, so without
 that check a typo in `index.json` would ship and quietly stop being applied.
+
+## Shared tooling
+
+This repo is on the [nswds-devops](https://github.com/digitalnsw/nswds-devops)
+file sync (**group 2c**), so these are owned centrally — edit them there, not
+here, or the next sync will overwrite your change:
+
+- `scripts/` (except `verify-release-published.mjs`, which is this repo's own)
+- `commitlint.config.mjs`, `commit-types.mjs`, `git-conventional-commits.yaml`
+- `.nvmrc`, `.npmrc`, `renovate.json`
+- every workflow except `ci.yml` and `release.yml`
+
+Group 2c exists because `release.yml` is bespoke: it carries `id-token: write`
+for OIDC publishing and runs `scripts/verify-release-published.mjs` afterwards,
+which fails the job if npm does not match the newest `v*` tag. The stock stub
+would replace it and silently disable both — which is why this repo is not in
+group 1 or 3.
