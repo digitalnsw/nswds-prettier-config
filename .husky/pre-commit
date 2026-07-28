@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Block staging unresolved merge conflict markers. Fast local mirror of the CI
+# check — CI is the enforced gate, since GitHub's web "Resolve conflicts" editor
+# commits server-side and never runs this hook.
+if git diff --cached | grep -nE '^\+(<{7}|>{7}) '; then
+  echo "✖ Unresolved merge conflict markers in staged changes." >&2
+  exit 1
+fi
