@@ -1,6 +1,6 @@
 {
   "name": "@nswds/prettier-config",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared Prettier configuration for the NSW Design System fleet.",
   "license": "MPL-2.0",
   "keywords": [
