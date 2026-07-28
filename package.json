@@ -34,6 +34,14 @@
   "scripts": {
     "semantic-release": "semantic-release",
     "test": "node --test",
+    "prepare": "husky",
+    "branch:create": "scripts/create-branch.sh",
+    "branch:suggest": "scripts/suggest-branch-name.sh",
+    "branch:suggest:create": "scripts/suggest-branch-name.sh --create",
+    "commit": "scripts/git-commit.sh",
+    "pr": "scripts/pull-request.sh",
+    "snyk:check": "bash -lc 'npm exec --yes --package snyk@latest -- snyk test --all-projects --json-file-output=snyk-analysis.json; code=$?; if [ $code -eq 0 ] || [ $code -eq 1 ]; then exit 0; fi; exit $code'",
+    "snyk:monitor": "npm exec --yes --package snyk@latest -- snyk monitor --all-projects",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -41,6 +49,8 @@
     "prettier": ">=3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
     "@nswds/prettier-config": "^1.0.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
@@ -49,6 +59,7 @@
     "@semantic-release/npm": "^12.0.2",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "conventional-changelog-conventionalcommits": "^9.3.1",
+    "husky": "^9.1.7",
     "prettier": "^3.5.3",
     "semantic-release": "^25.0.3"
   },
