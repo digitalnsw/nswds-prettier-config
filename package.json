@@ -34,6 +34,7 @@
   "scripts": {
     "semantic-release": "semantic-release",
     "test": "node --test",
+    "lint": "prettier --check .",
     "prepare": "husky",
     "branch:create": "scripts/create-branch.sh",
     "branch:suggest": "scripts/suggest-branch-name.sh",
