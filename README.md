@@ -31,13 +31,21 @@ base in a local `.prettierrc.mjs` instead of the `package.json` key:
 // The package exports JSON, so the import needs a JSON import attribute.
 import base from '@nswds/prettier-config' with { type: 'json' }
 
-export default {
+const config = {
   ...base,
   plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-tailwindcss'],
   tailwindFunctions: ['clsx'],
   tailwindStylesheet: './src/app/globals.css',
 }
+
+export default config
 ```
+
+Assign to a variable before exporting rather than exporting the object literal
+directly. Every Tailwind repo lints its own `.prettierrc.mjs`, and the literal
+form warns under `import/no-anonymous-default-export` — which
+[@nswds/eslint-config](https://github.com/digitalnsw/nswds-eslint-config)
+inherits from `eslint-config-next/core-web-vitals`.
 
 ## Changing the shared options
 
