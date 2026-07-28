@@ -1,8 +1,11 @@
 name: CI
 
+# No merge_group trigger. The shared merge gate (shared-ci.yml) is
+# pull_request-only, so a merge queue would run this job but none of the
+# required "install / *" or commitlint contexts — leaving them permanently
+# unsatisfiable and the queue stuck. Add it here only alongside the shared stub.
 on:
   pull_request:
-  merge_group:
 
 permissions:
   contents: read
@@ -14,7 +17,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Runs before install: npm reports a lockfile containing conflict markers
       # as a parse error that reads like a corrupt lockfile, so catch the markers
@@ -51,7 +54,7 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: npm
