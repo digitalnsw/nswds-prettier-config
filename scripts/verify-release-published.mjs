@@ -62,7 +62,12 @@ for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     lastError = ''
   } catch (error) {
     // Could be propagation lag, so retry — but keep the reason for the final report.
-    lastError = (error.stderr || error.message || String(error)).trim().split('\n')[0]
+    // String() rather than a bare `||` chain: execFileSync only yields a string
+    // stderr because run() sets encoding, and a future edit dropping that would make
+    // .trim() throw *inside* the catch — crashing the guard instead of reporting.
+    lastError = String(error.stderr ?? error.message ?? error)
+      .trim()
+      .split('\n')[0]
   }
   // Only overwrite on a real reading — a failed retry must not erase a version we
   // already observed, or the final report claims "unavailable" when it is not.
