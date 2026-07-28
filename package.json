@@ -33,12 +33,15 @@
   },
   "scripts": {
     "semantic-release": "semantic-release",
-    "test": "node --test"
+    "test": "node --test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "peerDependencies": {
     "prettier": ">=3"
   },
   "devDependencies": {
+    "@nswds/prettier-config": "^1.0.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
@@ -52,5 +55,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  }
+  },
+  "prettier": "@nswds/prettier-config"
 }

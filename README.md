@@ -12,7 +12,7 @@ old `.prettierrc`):
 ```jsonc
 // package.json
 {
-  "prettier": "@nswds/prettier-config"
+  "prettier": "@nswds/prettier-config",
 }
 ```
 
