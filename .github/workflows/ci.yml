@@ -31,10 +31,22 @@ jobs:
       # 34-character `=` rule under the title in LICENSE and failing this job
       # on every run, forever. Do not relax it to a prefix match.
       # .husky/pre-commit runs the same pattern against the index.
+      #
+      # The exit status is captured rather than tested with `if git grep`,
+      # because git grep has three outcomes, not two: 0 found, 1 none, >1 the
+      # scan itself failed (128 for a bad pattern or a broken repo). Under a
+      # plain `if`, that third case is indistinguishable from "clean" and the
+      # gate would pass without having looked at anything. `|| status=$?` also
+      # keeps the expected exit 1 from tripping the shell's `-e`.
       - name: Check for unresolved merge conflict markers
         run: |
-          if git grep -InE '^(<{7}|={7}|>{7}|\|{7})( .*)?$'; then
+          status=0
+          git grep -InE '^(<{7}|={7}|>{7}|\|{7})( .*)?$' || status=$?
+          if [ "$status" -eq 0 ]; then
             echo "::error::Unresolved merge conflict markers found in the files above."
+            exit 1
+          elif [ "$status" -ne 1 ]; then
+            echo "::error::git grep exited $status, so the scan never ran. Failing instead of reporting a clean tree."
             exit 1
           fi
 
