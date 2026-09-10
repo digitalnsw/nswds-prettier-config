@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.1...v1.0.2) (2026-09-10)
+
+### Bug Fixes
+
+* **release:** require a colon before a breaking-change footer ([#37](https://github.com/digitalnsw/nswds-prettier-config/issues/37)) ([b3cdb8b](https://github.com/digitalnsw/nswds-prettier-config/commit/b3cdb8b5bc7474e70eeeeeb73a0d4c14a1c0e86e)), closes [digitalnsw/nswds-devops#129](https://github.com/digitalnsw/nswds-devops/issues/129)
+
 ## [1.0.1](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.0...v1.0.1) (2026-07-28)
 
 ### Bug Fixes
