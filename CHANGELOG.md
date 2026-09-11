@@ -1,3 +1,9 @@
+## [1.0.3](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.2...v1.0.3) (2026-09-11)
+
+### Bug Fixes
+
+* **release:** honour the spec's hyphenated breaking-change footer ([#38](https://github.com/digitalnsw/nswds-prettier-config/issues/38)) ([880f620](https://github.com/digitalnsw/nswds-prettier-config/commit/880f6207c611c6d98c94e8bf98f3c561a34cdd9d))
+
 ## [1.0.2](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.1...v1.0.2) (2026-09-10)
 
 ### Bug Fixes
