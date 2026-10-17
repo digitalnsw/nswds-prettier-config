@@ -37,18 +37,21 @@ That is the base options plus `prettier-plugin-organize-imports` and
 `prettier-plugin-tailwindcss` (install both; they are optional peers, so npm
 will not add them for you) and `tailwindFunctions: ['clsx']`. The options use Prettier's own names, so
 pass `tailwindFunctions` to change the latter, and anything else Prettier accepts
-is spread over the defaults, which is how a monorepo sorts each app against its
-own stylesheet:
+is spread over the defaults. A monorepo has no sensible top-level stylesheet, so
+it names one per app in `overrides` and leaves the top-level path out; the entry
+accepts that, and refuses only a config that names a stylesheet nowhere:
 
 ```js
 // .prettierrc.mjs at the root of a workspace monorepo
 import tailwind from '@nswds/prettier-config/tailwind'
 
+const apps = ['web', 'admin']
+
 export default tailwind({
-  tailwindStylesheet: './apps/web/src/app/globals.css',
-  overrides: [
-    { files: 'apps/admin/**', options: { tailwindStylesheet: './apps/admin/src/app/globals.css' } },
-  ],
+  overrides: apps.map((app) => ({
+    files: `apps/${app}/**`,
+    options: { tailwindStylesheet: `./apps/${app}/src/app/globals.css` },
+  })),
 })
 ```
 
@@ -58,9 +61,9 @@ The call form is deliberate: `export default` of an object literal warns under
 inherits from `eslint-config-next/core-web-vitals`; a call expression does not.
 
 `plugins` is the one option that is merged rather than replaced: extra plugins
-go between the two shared ones, because `prettier-plugin-tailwindcss` wraps the
-parsers and must be loaded last. The entry ships a `.d.ts`, so editors show the
-signature.
+(names, URLs or plugin objects, as Prettier accepts) go between the two shared
+ones, because `prettier-plugin-tailwindcss` wraps the parsers and must be loaded
+last. The entry ships a declaration file, so editors show the signature.
 
 `tailwind.test.mjs` resolves the plugin options through the plugins' own
 support info and sorts a class that exists only in a fixture stylesheet's

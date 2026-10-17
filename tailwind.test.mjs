@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import * as prettier from 'prettier'
 
 import base from './index.json' with { type: 'json' }
@@ -19,13 +25,26 @@ test('carries the base options plus the plugin block', () => {
   assert.equal(config.tailwindStylesheet, tailwindStylesheet)
 })
 
-test('refuses to build a config without a stylesheet or without options', () => {
-  for (const bad of [undefined, null, 'x', {}, { tailwindStylesheet: '' }]) {
+test('refuses a config that names no stylesheet anywhere, or is not an object', () => {
+  const noStylesheet = { overrides: [{ files: 'apps/web/**', options: { printWidth: 80 } }] }
+  for (const bad of [undefined, null, 'x', {}, { tailwindStylesheet: '' }, noStylesheet]) {
     assert.throws(() => tailwind(bad), {
       name: 'TypeError',
       message: /@nswds\/prettier-config\/tailwind/,
     })
   }
+})
+
+// A monorepo names a stylesheet per app in overrides and has no sensible
+// top-level one; that shape is accepted and emits no top-level key.
+test('a stylesheet supplied only through overrides is enough', () => {
+  const overrides = [
+    { files: 'apps/web/**', options: { tailwindStylesheet: './apps/web/globals.css' } },
+    { files: 'apps/admin/**', options: { tailwindStylesheet: './apps/admin/globals.css' } },
+  ]
+  const config = tailwind({ overrides })
+  assert.equal('tailwindStylesheet' in config, false)
+  assert.equal(config.overrides, overrides)
 })
 
 test('extra options are spread over the defaults', () => {
@@ -55,6 +74,22 @@ test('extra plugins are merged, with the Tailwind plugin kept last', () => {
     'prettier-plugin-astro',
     'prettier-plugin-tailwindcss',
   ])
+})
+
+test('plugin objects and URLs pass through; a non-array is refused', () => {
+  const astro = { parsers: {} }
+  const url = new URL('file:///x/plugin.mjs')
+  const config = tailwind({ tailwindStylesheet, plugins: [astro, url] })
+  assert.deepEqual(config.plugins, [
+    'prettier-plugin-organize-imports',
+    astro,
+    url,
+    'prettier-plugin-tailwindcss',
+  ])
+  assert.throws(() => tailwind({ tailwindStylesheet, plugins: 'prettier-plugin-astro' }), {
+    name: 'TypeError',
+    message: /`plugins` must be an array/,
+  })
 })
 
 test('each call returns its own plugins array', () => {
@@ -87,4 +122,45 @@ test('sorts classes against the stylesheet, inside clsx too, with the shared quo
     { ...tailwind({ tailwindStylesheet }), parser: 'babel', filepath: 'a.jsx' },
   )
   assert.match(out, /clsx\('flex bg-brand p-4', open && 'block hidden'\)/)
+})
+
+// The declaration file is what editors and type-checked configs see, and a
+// typo in it, or an `exports` edit that drops the `types` condition, would
+// ship with every other test green. Type-check a consumer the way a project
+// with `moduleResolution: bundler` would see the package.
+test('the shipped types resolve through the package exports', () => {
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const dir = mkdtempSync(path.join(tmpdir(), 'nswds-prettier-config-types-'))
+  writeFileSync(
+    path.join(dir, 'consumer.ts'),
+    [
+      `import tailwind from '@nswds/prettier-config/tailwind'`,
+      `import type { TailwindOptions } from '@nswds/prettier-config/tailwind'`,
+      `const options: TailwindOptions = { tailwindStylesheet: './globals.css', plugins: [{}] }`,
+      `export const a = tailwind(options)`,
+      `export const b = tailwind({ overrides: [{ files: 'x', options: { tailwindStylesheet: 'y' } }] })`,
+      `// @ts-expect-error tailwindFunctions must be an array`,
+      `export const c = tailwind({ tailwindStylesheet: 'z', tailwindFunctions: 'clsx' })`,
+      '',
+    ].join('\n'),
+  )
+  writeFileSync(
+    path.join(dir, 'tsconfig.json'),
+    JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noEmit: true,
+        module: 'esnext',
+        moduleResolution: 'bundler',
+        target: 'es2022',
+        skipLibCheck: true,
+        paths: { '@nswds/prettier-config/tailwind': [path.join(here, 'tailwind.d.mts')] },
+        types: [],
+      },
+      files: ['consumer.ts'],
+    }),
+  )
+  const tsc = path.join(here, 'node_modules', '.bin', 'tsc')
+  const result = spawnSync(tsc, ['-p', dir], { encoding: 'utf8' })
+  assert.equal(result.status, 0, result.stdout + result.stderr)
 })

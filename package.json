@@ -25,14 +25,14 @@
   "exports": {
     ".": "./index.json",
     "./tailwind": {
-      "types": "./tailwind.d.ts",
+      "types": "./tailwind.d.mts",
       "default": "./tailwind.mjs"
     }
   },
   "files": [
     "index.json",
     "tailwind.mjs",
-    "tailwind.d.ts"
+    "tailwind.d.mts"
   ],
   "engines": {
     "node": "^22.22.2 || >=24.15.0"
