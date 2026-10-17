@@ -22,9 +22,12 @@ export interface TailwindStylesheetOptions extends TailwindBase {
 }
 
 /**
- * A stylesheet per app, set in `overrides`, as a workspace monorepo does. Files
- * no override gives a stylesheet sort against Tailwind's default theme, so
- * cover every app.
+ * A stylesheet per app, set in `overrides`, as a workspace monorepo does. The
+ * type can only require the array (overrides are usually built dynamically);
+ * `tailwind()` checks at load time that at least one entry sets
+ * `options.tailwindStylesheet` and that every value set is a path. Files no
+ * override gives a stylesheet sort against Tailwind's default theme, so cover
+ * every app.
  */
 export interface TailwindOverridesOptions extends TailwindBase {
   tailwindStylesheet?: undefined

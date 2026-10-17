@@ -42,8 +42,9 @@ it names one per app in `overrides` and leaves the top-level path out. The entry
 accepts that and checks every stylesheet value an override sets, but it cannot
 tell which overrides are meant to carry one (an override may be for Markdown),
 so files no override gives a stylesheet sort against Tailwind's default theme:
-cover every app. A config that names a stylesheet nowhere is refused, and the
-types refuse it too (`TailwindOptions` is a union of the two forms):
+cover every app. A config that names a stylesheet nowhere is refused when the
+config loads; the types (`TailwindOptions`, a union of the two forms) catch
+the no-`overrides` case, but cannot see inside a dynamically built array:
 
 ```js
 // .prettierrc.mjs at the root of a workspace monorepo

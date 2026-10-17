@@ -159,7 +159,8 @@ test('the shipped types resolve through the package exports', () => {
   const dir = mkdtempSync(path.join(cache, 'types-consumer-'))
   try {
     mkdirSync(path.join(dir, 'node_modules', '@nswds'), { recursive: true })
-    symlinkSync(here, path.join(dir, 'node_modules', '@nswds', 'prettier-config'), 'dir')
+    // 'junction' needs no privileges on Windows and is ignored elsewhere.
+    symlinkSync(here, path.join(dir, 'node_modules', '@nswds', 'prettier-config'), 'junction')
     writeFileSync(
       path.join(dir, 'consumer.ts'),
       [
@@ -190,8 +191,10 @@ test('the shipped types resolve through the package exports', () => {
         files: ['consumer.ts'],
       }),
     )
-    const tsc = path.join(here, 'node_modules', '.bin', 'tsc')
-    const result = spawnSync(tsc, ['-p', dir], { encoding: 'utf8' })
+    // TypeScript's own CLI script through this Node, not the .bin shim, which
+    // is a .cmd launcher on Windows and cannot be spawned directly.
+    const tsc = path.join(here, 'node_modules', 'typescript', 'bin', 'tsc')
+    const result = spawnSync(process.execPath, [tsc, '-p', dir], { encoding: 'utf8' })
     assert.equal(result.status, 0, result.stdout + result.stderr)
   } finally {
     rmSync(dir, { recursive: true, force: true })
