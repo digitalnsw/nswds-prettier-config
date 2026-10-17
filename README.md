@@ -21,31 +21,60 @@ That's the whole config for a plain repo. No local `.prettierrc` needed.
 
 ## Repos that use Tailwind
 
-The base config deliberately omits the Tailwind plugin block, because
-`tailwindStylesheet` is an app-specific path (`./src/app/globals.css` in the
-Next.js apps) that doesn't exist in non-app repos. Tailwind repos extend the
-base in a local `.prettierrc.mjs` instead of the `package.json` key:
+The base config omits the Tailwind plugin block, because `tailwindStylesheet`
+is an app-specific path that does not exist in non-app repos. Tailwind repos use
+the `tailwind` entry from a local `.prettierrc.mjs` instead of the `package.json`
+key, naming only that path:
 
 ```js
 // .prettierrc.mjs
-// The package exports JSON, so the import needs a JSON import attribute.
-import base from '@nswds/prettier-config' with { type: 'json' }
+import tailwind from '@nswds/prettier-config/tailwind'
 
-const config = {
-  ...base,
-  plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-tailwindcss'],
-  tailwindFunctions: ['clsx'],
-  tailwindStylesheet: './src/app/globals.css',
-}
-
-export default config
+export default tailwind({ tailwindStylesheet: './src/app/globals.css' })
 ```
 
-Assign to a variable before exporting rather than exporting the object literal
-directly. Every Tailwind repo lints its own `.prettierrc.mjs`, and the literal
-form warns under `import/no-anonymous-default-export` — which
+That is the base options plus `prettier-plugin-organize-imports` and
+`prettier-plugin-tailwindcss` (install both; they are optional peers, so npm
+will not add them for you) and `tailwindFunctions: ['clsx']`. The options use Prettier's own names, so
+pass `tailwindFunctions` to change the latter, and anything else Prettier accepts
+is spread over the defaults. A monorepo has no sensible top-level stylesheet, so
+it names one per app in `overrides` and leaves the top-level path out. The entry
+accepts that and checks every stylesheet value an override sets, but it cannot
+tell which overrides are meant to carry one (an override may be for Markdown),
+so files no override gives a stylesheet sort against Tailwind's default theme:
+cover every app. A config that names a stylesheet nowhere is refused when the
+config loads; the types (`TailwindOptions`, a union of the two forms) catch
+the no-`overrides` case, but cannot see inside a dynamically built array:
+
+```js
+// .prettierrc.mjs at the root of a workspace monorepo
+import tailwind from '@nswds/prettier-config/tailwind'
+
+const apps = ['web', 'admin']
+
+export default tailwind({
+  overrides: apps.map((app) => ({
+    files: `apps/${app}/**`,
+    options: { tailwindStylesheet: `./apps/${app}/src/app/globals.css` },
+  })),
+})
+```
+
+The call form is deliberate: `export default` of an object literal warns under
+`import/no-anonymous-default-export`, which
 [@nswds/eslint-config](https://github.com/digitalnsw/nswds-eslint-config)
-inherits from `eslint-config-next/core-web-vitals`.
+inherits from `eslint-config-next/core-web-vitals`; a call expression does not.
+
+`plugins` is the one option that is merged rather than replaced: extra plugins
+(names, URLs or plugin objects, as Prettier accepts) go between the two shared
+ones, because `prettier-plugin-tailwindcss` wraps the parsers and must be loaded
+last. The entry ships a declaration file, so editors show the signature.
+
+`tailwind.test.mjs` resolves the plugin options through the plugins' own
+support info and sorts a class that exists only in a fixture stylesheet's
+`@theme` on every CI run, so a renamed plugin option, or a stylesheet that is
+no longer read, fails here rather than silently stopping class sorting in every
+consumer.
 
 ## Changing the shared options
 

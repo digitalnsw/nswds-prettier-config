@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+/* A custom token, so the test can tell a sheet that was read from one that
+   was not: a class the default theme does not know sorts first as unknown. */
+@theme {
+  --color-brand: #123456;
+}
