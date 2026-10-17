@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import * as prettier from 'prettier'
 
@@ -143,7 +143,8 @@ test('sorts classes against the stylesheet, inside clsx too, with the shared quo
 
 // The declaration file is what editors and type-checked configs see, and a
 // typo in it, a mis-named file or a removed `./tailwind` export would ship
-// with every other test green. So the consumer resolves the package the way a
+// with every other test green (a typo inside the declaration is reported only
+// because skipLibCheck is off below; verified both ways). So the consumer resolves the package the way a
 // real one does: through a node_modules entry that links to this repo, so
 // TypeScript reads package.json and its `exports` map, with no `paths` mapping
 // to short-circuit it. Verified to fail when the subpath export is removed and
@@ -185,7 +186,9 @@ test('the shipped types resolve through the package exports', () => {
           module: 'esnext',
           moduleResolution: 'bundler',
           target: 'es2022',
-          skipLibCheck: true,
+          // Errors inside tailwind.d.mts itself must count; skipLibCheck would
+          // silence them and let a typo in the declaration ship.
+          skipLibCheck: false,
           types: [],
         },
         files: ['consumer.ts'],
@@ -196,6 +199,46 @@ test('the shipped types resolve through the package exports', () => {
     const tsc = path.join(here, 'node_modules', 'typescript', 'bin', 'tsc')
     const result = spawnSync(process.execPath, [tsc, '-p', dir], { encoding: 'utf8' })
     assert.equal(result.status, 0, result.stdout + result.stderr)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+// `prettier.format()` ignores `overrides`; `resolveConfig` applies them. So
+// the override-only form, the one a monorepo uses, is exercised through a real
+// config file: a file under the override's path must sort against the
+// fixture's theme (`bg-brand` lands between `flex` and `p-4`), and one outside
+// it, with no stylesheet, must not. The temp dir sits under node_modules so
+// the plugin names in the config resolve from this repo's install.
+test('an override-supplied stylesheet is honoured through config resolution', async () => {
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const cache = path.join(here, 'node_modules', '.cache')
+  mkdirSync(cache, { recursive: true })
+  const dir = mkdtempSync(path.join(cache, 'overrides-consumer-'))
+  try {
+    mkdirSync(path.join(dir, 'apps', 'web'), { recursive: true })
+    mkdirSync(path.join(dir, 'apps', 'other'), { recursive: true })
+    writeFileSync(
+      path.join(dir, '.prettierrc.mjs'),
+      [
+        `import tailwind from ${JSON.stringify(pathToFileURL(path.join(here, 'tailwind.mjs')).href)}`,
+        `export default tailwind({`,
+        `  overrides: [{ files: 'apps/web/**', options: { tailwindStylesheet: ${JSON.stringify(path.join(here, 'fixtures', 'globals.css'))} } }],`,
+        `})`,
+        '',
+      ].join('\n'),
+    )
+    const src = `const A = () => <div className="bg-brand p-4 flex" />\n`
+    const run = async (filepath) => {
+      const config = await prettier.resolveConfig(filepath, { useCache: false })
+      assert.ok(config, 'resolveConfig found the temp .prettierrc.mjs')
+      return prettier.format(src, { ...config, filepath })
+    }
+    assert.match(await run(path.join(dir, 'apps', 'web', 'a.jsx')), /className='flex bg-brand p-4'/)
+    assert.match(
+      await run(path.join(dir, 'apps', 'other', 'a.jsx')),
+      /className='bg-brand flex p-4'/,
+    )
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

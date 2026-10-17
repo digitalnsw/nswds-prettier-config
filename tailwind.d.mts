@@ -1,6 +1,6 @@
 import type { Config } from 'prettier'
 
-interface TailwindBase extends Omit<Config, 'plugins'> {
+interface TailwindBase extends Config {
   /** Functions whose string arguments hold class names. Defaults to `['clsx']`. */
   tailwindFunctions?: string[]
   /**
