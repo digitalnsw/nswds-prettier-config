@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.3...v1.1.0) (2026-10-17)
+
+### Features
+
+* tailwind entry that carries the plugin block ([#58](https://github.com/digitalnsw/nswds-prettier-config/issues/58)) ([1934022](https://github.com/digitalnsw/nswds-prettier-config/commit/19340222864b86406ce4bb781579775c35950d20))
+
 ## [1.0.3](https://github.com/digitalnsw/nswds-prettier-config/compare/v1.0.2...v1.0.3) (2026-09-11)
 
 ### Bug Fixes
