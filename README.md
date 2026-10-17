@@ -21,31 +21,44 @@ That's the whole config for a plain repo. No local `.prettierrc` needed.
 
 ## Repos that use Tailwind
 
-The base config deliberately omits the Tailwind plugin block, because
-`tailwindStylesheet` is an app-specific path (`./src/app/globals.css` in the
-Next.js apps) that doesn't exist in non-app repos. Tailwind repos extend the
-base in a local `.prettierrc.mjs` instead of the `package.json` key:
+The base config omits the Tailwind plugin block, because `tailwindStylesheet`
+is an app-specific path that does not exist in non-app repos. Tailwind repos use
+the `tailwind` entry from a local `.prettierrc.mjs` instead of the `package.json`
+key, naming only that path:
 
 ```js
 // .prettierrc.mjs
-// The package exports JSON, so the import needs a JSON import attribute.
-import base from '@nswds/prettier-config' with { type: 'json' }
+import tailwind from '@nswds/prettier-config/tailwind'
 
-const config = {
-  ...base,
-  plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-tailwindcss'],
-  tailwindFunctions: ['clsx'],
-  tailwindStylesheet: './src/app/globals.css',
-}
-
-export default config
+export default tailwind({ stylesheet: './src/app/globals.css' })
 ```
 
-Assign to a variable before exporting rather than exporting the object literal
-directly. Every Tailwind repo lints its own `.prettierrc.mjs`, and the literal
-form warns under `import/no-anonymous-default-export` — which
+That is the base options plus `prettier-plugin-organize-imports` and
+`prettier-plugin-tailwindcss` (install both; they are optional peers, so npm
+will not add them for you) and `tailwindFunctions: ['clsx']`. Pass `functions`
+to change the latter, and anything else Prettier accepts is spread over the
+defaults, which is how a monorepo sorts each app against its own stylesheet:
+
+```js
+// .prettierrc.mjs at the root of a workspace monorepo
+import tailwind from '@nswds/prettier-config/tailwind'
+
+export default tailwind({
+  stylesheet: './apps/web/src/app/globals.css',
+  overrides: [
+    { files: 'apps/admin/**', options: { tailwindStylesheet: './apps/admin/src/app/globals.css' } },
+  ],
+})
+```
+
+The call form is deliberate: `export default` of an object literal warns under
+`import/no-anonymous-default-export`, which
 [@nswds/eslint-config](https://github.com/digitalnsw/nswds-eslint-config)
-inherits from `eslint-config-next/core-web-vitals`.
+inherits from `eslint-config-next/core-web-vitals`; a call expression does not.
+
+`tailwind.test.mjs` resolves the plugin options through the plugins' own
+support info and sorts a real class list on every CI run, so a renamed plugin
+option fails here rather than silently stopping class sorting in every consumer.
 
 ## Changing the shared options
 
