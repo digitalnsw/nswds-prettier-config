@@ -24,11 +24,15 @@
   "main": "index.json",
   "exports": {
     ".": "./index.json",
-    "./tailwind": "./tailwind.mjs"
+    "./tailwind": {
+      "types": "./tailwind.d.ts",
+      "default": "./tailwind.mjs"
+    }
   },
   "files": [
     "index.json",
-    "tailwind.mjs"
+    "tailwind.mjs",
+    "tailwind.d.ts"
   ],
   "engines": {
     "node": "^22.22.2 || >=24.15.0"
