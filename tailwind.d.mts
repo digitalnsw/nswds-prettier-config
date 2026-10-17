@@ -1,13 +1,6 @@
 import type { Config } from 'prettier'
 
-export interface TailwindOptions extends Config {
-  /**
-   * Path to the CSS file that imports Tailwind, relative to the config file,
-   * e.g. `'./src/app/globals.css'`. The class sorter reads it to learn the
-   * theme. Required unless `overrides` sets `tailwindStylesheet` for every
-   * Tailwind file, as a monorepo does with one entry per app.
-   */
-  tailwindStylesheet?: string
+interface TailwindBase extends Omit<Config, 'plugins'> {
   /** Functions whose string arguments hold class names. Defaults to `['clsx']`. */
   tailwindFunctions?: string[]
   /**
@@ -17,6 +10,28 @@ export interface TailwindOptions extends Config {
    */
   plugins?: Config['plugins']
 }
+
+/** One stylesheet for the whole repo. */
+export interface TailwindStylesheetOptions extends TailwindBase {
+  /**
+   * Path to the CSS file that imports Tailwind, relative to the config file,
+   * e.g. `'./src/app/globals.css'`. The class sorter reads it to learn the
+   * theme.
+   */
+  tailwindStylesheet: string
+}
+
+/**
+ * A stylesheet per app, set in `overrides`, as a workspace monorepo does. Files
+ * no override gives a stylesheet sort against Tailwind's default theme, so
+ * cover every app.
+ */
+export interface TailwindOverridesOptions extends TailwindBase {
+  tailwindStylesheet?: undefined
+  overrides: NonNullable<Config['overrides']>
+}
+
+export type TailwindOptions = TailwindStylesheetOptions | TailwindOverridesOptions
 
 /** The shared Prettier options plus the Tailwind plugin block. */
 export default function tailwind(options: TailwindOptions): Config

@@ -35,13 +35,26 @@ export default function tailwind(options) {
   if (!Array.isArray(plugins)) {
     throw new TypeError(`${PREFIX} \`plugins\` must be an array of extra plugins to merge in`)
   }
-  const inOverrides =
-    Array.isArray(rest.overrides) &&
-    rest.overrides.some((o) => o && o.options && isPath(o.options.tailwindStylesheet))
   if (tailwindStylesheet !== undefined && !isPath(tailwindStylesheet)) {
     throw new TypeError(
       `${PREFIX} \`tailwindStylesheet\` must be the path to the CSS file that imports Tailwind, e.g. "./src/app/globals.css"`,
     )
+  }
+  // An override may set its own stylesheet (a monorepo sets one per app).
+  // Every value that is set must be a path; which overrides are meant to carry
+  // one cannot be known here, since an override may exist for Markdown or any
+  // other reason, so an override without the option is left alone.
+  const overrides = Array.isArray(rest.overrides) ? rest.overrides : []
+  let inOverrides = false
+  for (const [i, o] of overrides.entries()) {
+    const value = o && o.options ? o.options.tailwindStylesheet : undefined
+    if (value === undefined) continue
+    if (!isPath(value)) {
+      throw new TypeError(
+        `${PREFIX} overrides[${i}].options.tailwindStylesheet must be the path to that app's CSS file that imports Tailwind`,
+      )
+    }
+    inOverrides = true
   }
   if (tailwindStylesheet === undefined && !inOverrides) {
     throw new TypeError(

@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -45,6 +44,24 @@ test('a stylesheet supplied only through overrides is enough', () => {
   const config = tailwind({ overrides })
   assert.equal('tailwindStylesheet' in config, false)
   assert.equal(config.overrides, overrides)
+})
+
+// Which overrides are meant to carry a stylesheet cannot be known (one may be
+// for Markdown), but any value that is set is checked, so a typo in one app's
+// entry fails here instead of sorting that app against the default theme.
+test('an override that sets a bad stylesheet value is refused', () => {
+  for (const bad of ['', 42]) {
+    assert.throws(
+      () =>
+        tailwind({
+          overrides: [
+            { files: 'apps/web/**', options: { tailwindStylesheet: './apps/web/globals.css' } },
+            { files: 'apps/admin/**', options: { tailwindStylesheet: bad } },
+          ],
+        }),
+      { name: 'TypeError', message: /overrides\[1\]\.options\.tailwindStylesheet/ },
+    )
+  }
 })
 
 test('extra options are spread over the defaults', () => {
@@ -125,42 +142,58 @@ test('sorts classes against the stylesheet, inside clsx too, with the shared quo
 })
 
 // The declaration file is what editors and type-checked configs see, and a
-// typo in it, or an `exports` edit that drops the `types` condition, would
-// ship with every other test green. Type-check a consumer the way a project
-// with `moduleResolution: bundler` would see the package.
+// typo in it, a mis-named file or a removed `./tailwind` export would ship
+// with every other test green. So the consumer resolves the package the way a
+// real one does: through a node_modules entry that links to this repo, so
+// TypeScript reads package.json and its `exports` map, with no `paths` mapping
+// to short-circuit it. Verified to fail when the subpath export is removed and
+// when the declaration is renamed. It does NOT fail when only the `types`
+// condition is dropped: TypeScript then finds tailwind.d.mts beside
+// tailwind.mjs by naming convention, which is also why consumers would still
+// get the types. The temp dir sits under this repo's node_modules so
+// `prettier`'s types resolve for the consumer too.
 test('the shipped types resolve through the package exports', () => {
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const dir = mkdtempSync(path.join(tmpdir(), 'nswds-prettier-config-types-'))
-  writeFileSync(
-    path.join(dir, 'consumer.ts'),
-    [
-      `import tailwind from '@nswds/prettier-config/tailwind'`,
-      `import type { TailwindOptions } from '@nswds/prettier-config/tailwind'`,
-      `const options: TailwindOptions = { tailwindStylesheet: './globals.css', plugins: [{}] }`,
-      `export const a = tailwind(options)`,
-      `export const b = tailwind({ overrides: [{ files: 'x', options: { tailwindStylesheet: 'y' } }] })`,
-      `// @ts-expect-error tailwindFunctions must be an array`,
-      `export const c = tailwind({ tailwindStylesheet: 'z', tailwindFunctions: 'clsx' })`,
-      '',
-    ].join('\n'),
-  )
-  writeFileSync(
-    path.join(dir, 'tsconfig.json'),
-    JSON.stringify({
-      compilerOptions: {
-        strict: true,
-        noEmit: true,
-        module: 'esnext',
-        moduleResolution: 'bundler',
-        target: 'es2022',
-        skipLibCheck: true,
-        paths: { '@nswds/prettier-config/tailwind': [path.join(here, 'tailwind.d.mts')] },
-        types: [],
-      },
-      files: ['consumer.ts'],
-    }),
-  )
-  const tsc = path.join(here, 'node_modules', '.bin', 'tsc')
-  const result = spawnSync(tsc, ['-p', dir], { encoding: 'utf8' })
-  assert.equal(result.status, 0, result.stdout + result.stderr)
+  const cache = path.join(here, 'node_modules', '.cache')
+  mkdirSync(cache, { recursive: true })
+  const dir = mkdtempSync(path.join(cache, 'types-consumer-'))
+  try {
+    mkdirSync(path.join(dir, 'node_modules', '@nswds'), { recursive: true })
+    symlinkSync(here, path.join(dir, 'node_modules', '@nswds', 'prettier-config'), 'dir')
+    writeFileSync(
+      path.join(dir, 'consumer.ts'),
+      [
+        `import tailwind from '@nswds/prettier-config/tailwind'`,
+        `import type { TailwindOptions } from '@nswds/prettier-config/tailwind'`,
+        `const options: TailwindOptions = { tailwindStylesheet: './globals.css', plugins: [{}] }`,
+        `export const a = tailwind(options)`,
+        `export const b = tailwind({ overrides: [{ files: 'x', options: { tailwindStylesheet: 'y' } }] })`,
+        `// @ts-expect-error a stylesheet must come from the top level or from overrides`,
+        `export const c = tailwind({})`,
+        `// @ts-expect-error tailwindFunctions must be an array`,
+        `export const d = tailwind({ tailwindStylesheet: 'z', tailwindFunctions: 'clsx' })`,
+        '',
+      ].join('\n'),
+    )
+    writeFileSync(
+      path.join(dir, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          module: 'esnext',
+          moduleResolution: 'bundler',
+          target: 'es2022',
+          skipLibCheck: true,
+          types: [],
+        },
+        files: ['consumer.ts'],
+      }),
+    )
+    const tsc = path.join(here, 'node_modules', '.bin', 'tsc')
+    const result = spawnSync(tsc, ['-p', dir], { encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
